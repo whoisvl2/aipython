@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #chat-container { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: scroll; }
+        .message { margin: 10px; padding: 10px; border-radius: 5px; }
+        .user { background-color: #e6f3ff; }
+        .assistant { background-color: #f0f0f0; }
+        #input-container { margin-top: 10px; }
+        #user-input { width: 80%; padding: 10px; }
+        #send-button { padding: 10px 20px; }
+    </style>
+</head>
+<body>
+    <h1>AI Chatbot</h1>
+    <p>Powered by Hugging Face and Mixtral-8x7B</p>
+    <div id="chat-container"></div>
+    <div id="input-container">
+        <input type="text" id="user-input" placeholder="Type your message...">
+        <button id="send-button" onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById("user-input");
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Add user message to chat
+            addMessage("user", message);
+            input.value = "";
+
+            // Send message to server
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message })
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    addMessage("assistant", `Error: ${data.error}`);
+                } else {
+                    addMessage("assistant", data.response);
+                    updateChatHistory(data.history);
+                }
+            } catch (error) {
+                addMessage("assistant", `Error: ${error.message}`);
+            }
+        }
+
+        function addMessage(role, content) {
+            const chatContainer = document.getElementById("chat-container");
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `message ${role}`;
+            messageDiv.textContent = content;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function updateChatHistory(history) {
+            const chatContainer = document.getElementById("chat-container");
+            chatContainer.innerHTML = "";
+            history.forEach(msg => addMessage(msg.role, msg.content));
+        }
+
+        // Allow sending message with Enter key
+        document.getElementById("user-input").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendMessage();
+        });
+    </script>
+</body>
+</html>
